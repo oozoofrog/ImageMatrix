@@ -13,8 +13,7 @@ protocol ImageInfo {
     
     var bytesPerRow: Int { get }
     var componentsPerPixel: Int { get }
-    var alphaInfo: CGImageAlphaInfo { get }
-    var bitmapInfo: CGBitmapInfo { get }
+    var bitsPerPixel: Int { get }
     var rawWidth: Int { get }
     var rawHeight: Int { get }
     
@@ -22,7 +21,7 @@ protocol ImageInfo {
 }
 
 protocol ImageDSP {
-    func applyConvolve(kernel:[Int16], row: Int, col: Int) -> UIImage?
+    func applyConvolve(kernel:[Float], row: Int, col: Int) -> UIImage?
 }
 
 extension UIImage: ImageInfo, ImageDSP {
@@ -41,18 +40,8 @@ extension ImageInfo where Self: UIImage {
         return bytesPerRow / rawWidth
     }
     
-    var alphaInfo: CGImageAlphaInfo {
-        guard let ref = cgImage else {
-            return CGImageAlphaInfo.none
-        }
-        return ref.alphaInfo
-    }
-    
-    var bitmapInfo: CGBitmapInfo {
-        guard let ref = cgImage else {
-            return CGBitmapInfo.init(rawValue: 0)
-        }
-        return ref.bitmapInfo
+    var bitsPerPixel: Int {
+        return componentsPerPixel * 8
     }
     
     var rawWidth: Int {
@@ -70,33 +59,34 @@ extension ImageInfo where Self: UIImage {
 
 extension ImageDSP where Self: ImageInfo, Self: UIImage{
     
-    func applyConvolve(kernel:[Int16], row: Int, col: Int) -> UIImage? {
+    func applyConvolve(kernel:[Float], row: Int, col: Int) -> UIImage? {
        
-        var srcBuffer = malloc(Int(dataSize))
-        var src = vImage_Buffer(data: srcBuffer, height: vImagePixelCount(rawHeight), width: vImagePixelCount(rawWidth), rowBytes: bytesPerRow)
-
-        var dstBuffer = malloc(Int(dataSize))
-        var dst = vImage_Buffer(data: dstBuffer, height: vImagePixelCount(rawHeight), width: vImagePixelCount(rawWidth), rowBytes: bytesPerRow)
+        let srcData = CFDataCreateCopy(kCFAllocatorDefault, cgImage!.dataProvider!.data)!
+        let srcBuffer = UnsafeMutablePointer<UInt8>(CFDataGetBytePtr(srcData))!
+        
+        let dstBufferSize = bytesPerRow * rawHeight
+        let dstBuffer = UnsafeMutablePointer<UInt8>(malloc(dstBufferSize))!
+        let bufferSize = rawWidth * rawHeight * sizeof(Float)
+        let bufferLength = rawWidth * rawHeight
+        let buffer = UnsafeMutablePointer<Float>(malloc(bufferSize))!
         
         defer {
-            free(srcBuffer)
-            free(dstBuffer)
+            free(buffer)
         }
-        
-        let space = CGColorSpaceCreateDeviceRGB()
-        let ctx = CGContext.init(data: srcBuffer, width: rawWidth, height: rawHeight, bitsPerComponent: 8, bytesPerRow: bytesPerRow, space: space, bitmapInfo: self.alphaInfo.rawValue | self.bitmapInfo.rawValue)
-        
-        ctx?.draw(in: CGRect.init(x: 0, y: 0, width: rawWidth, height: rawHeight), image: cgImage!)
-        
-        vImageConvolve_ARGB8888(&src, &dst, nil, 0, 0, kernel, UInt32(row), UInt32(col), 1, nil, vImage_Flags(kvImageCopyInPlace))
 
-        memcpy(UnsafeMutablePointer<Void>(srcBuffer), dstBuffer, Int(dataSize))
-        
-        print("finished")
-        guard let ref = ctx?.makeImage() else {
-            return nil
+        var min: Float = 0.0
+        var max: Float = 255.0
+        for i in 0..<componentsPerPixel {
+            vDSP_vfltu8(srcBuffer.advanced(by: i), componentsPerPixel, buffer, 1, UInt(bufferLength))
+            vDSP_imgfir(buffer, vDSP_Length(rawHeight), vDSP_Length(rawWidth), kernel, buffer, vDSP_Length(row), vDSP_Length(col))
+            vDSP_vclip(buffer, 1, &min, &max, buffer, 1, vDSP_Length(bufferLength))
+            vDSP_vfixu8(buffer, 1, dstBuffer.advanced(by: i), componentsPerPixel, vDSP_Length(bufferLength))
         }
-        return UIImage(cgImage: ref)
+        let dataProvider = CGDataProvider(dataInfo: nil, data: UnsafePointer<Void>(dstBuffer), size: dstBufferSize) { (info, data, size) in
+            free(UnsafeMutablePointer<Void>(data))
+        }
+        let imageRef = CGImage(width: rawWidth, height: rawHeight, bitsPerComponent: 8, bitsPerPixel: bitsPerPixel, bytesPerRow: bytesPerRow, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: cgImage!.bitmapInfo, provider: dataProvider!, decode: nil, shouldInterpolate: false, intent: CGColorRenderingIntent.defaultIntent)!
+        return UIImage(cgImage: imageRef)
     }
     
 }
