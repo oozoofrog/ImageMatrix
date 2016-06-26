@@ -9,55 +9,29 @@
 import UIKit
 import Accelerate
 
-protocol ImageInfo {
-    
-    var bytesPerRow: Int { get }
-    var componentsPerPixel: Int { get }
-    var bitsPerPixel: Int { get }
-    var rawWidth: Int { get }
-    var rawHeight: Int { get }
-    
-    var dataSize: UInt { get }
-}
 
 protocol ImageDSP {
     func applyConvolve(kernel:[Float], row: Int, col: Int) -> UIImage?
 }
 
-extension UIImage: ImageInfo, ImageDSP {
+extension UIImage: ImageDSP {
   
 }
 
-extension ImageInfo where Self: UIImage {
-    var bytesPerRow: Int {
-        guard let ref = cgImage else {
-            return 0
+extension UnsafeMutablePointer {
+    func printMatrix(row: Int, col: Int) {
+        for r in 0..<row {
+            var rowString = ""
+            for c in 0..<col {
+                let format = String.init(format: "%0.3d", self[c + c*r] as? UInt8 ?? 0)
+                rowString += "\(format), "
+            }
+            print("[\(rowString)]")
         }
-        return ref.bytesPerRow
-    }
-    
-    var componentsPerPixel: Int {
-        return bytesPerRow / rawWidth
-    }
-    
-    var bitsPerPixel: Int {
-        return componentsPerPixel * 8
-    }
-    
-    var rawWidth: Int {
-        return cgImage?.width ?? 0
-    }
-    
-    var rawHeight: Int {
-        return cgImage?.height ?? 0
-    }
-    
-    var dataSize: UInt {
-        return UInt(bytesPerRow * rawHeight)
     }
 }
 
-extension ImageDSP where Self: ImageInfo, Self: UIImage{
+extension ImageDSP where Self: ImageDataSourceable, Self: UIImage{
     
     func applyConvolve(kernel:[Float], row: Int, col: Int) -> UIImage? {
        
@@ -73,7 +47,7 @@ extension ImageDSP where Self: ImageInfo, Self: UIImage{
         defer {
             free(buffer)
         }
-
+        print(componentsPerPixel)
         var min: Float = 0.0
         var max: Float = 255.0
         for i in 0..<componentsPerPixel {
@@ -85,7 +59,12 @@ extension ImageDSP where Self: ImageInfo, Self: UIImage{
         let dataProvider = CGDataProvider(dataInfo: nil, data: UnsafePointer<Void>(dstBuffer), size: dstBufferSize) { (info, data, size) in
             free(UnsafeMutablePointer<Void>(data))
         }
-        let imageRef = CGImage(width: rawWidth, height: rawHeight, bitsPerComponent: 8, bitsPerPixel: bitsPerPixel, bytesPerRow: bytesPerRow, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: cgImage!.bitmapInfo, provider: dataProvider!, decode: nil, shouldInterpolate: false, intent: CGColorRenderingIntent.defaultIntent)!
+        print("rowHeight -> \(rawHeight)")
+        srcBuffer.printMatrix(row: rawHeight, col: rawWidth * componentsPerPixel)
+        print("\n")
+        dstBuffer.printMatrix(row: rawHeight, col: rawWidth * componentsPerPixel)
+        
+        let imageRef = CGImage(width: rawWidth, height: rawHeight, bitsPerComponent: cgImage!.bitsPerComponent, bitsPerPixel: cgImage!.bitsPerPixel, bytesPerRow: cgImage!.bytesPerRow, space: cgImage!.colorSpace!, bitmapInfo: cgImage!.bitmapInfo, provider: dataProvider!, decode: nil, shouldInterpolate: false, intent: cgImage!.renderingIntent)!
         return UIImage(cgImage: imageRef)
     }
     
