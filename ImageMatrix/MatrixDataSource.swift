@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import Accelerate
 
-enum ImageComponentTag: Hashable, CustomStringConvertible {
+enum ImageComponentTag: Hashable, CustomStringConvertible, Equatable {
     case R, G, B, A
     
     var description: String {
@@ -30,13 +31,21 @@ protocol ImageComponentProtocol {
     var pixel: UInt8 { get }
 }
 
-struct ImageComponent: ImageComponentProtocol, CustomStringConvertible {
+struct ImageComponent: ImageComponentProtocol, CustomStringConvertible, Hashable, Equatable {
     let tag: ImageComponentTag
     let pixel: UInt8
     
     var description: String {
         return "\(tag): \(pixel)"
     }
+    
+    var hashValue: Int {
+        return tag.hashValue ^ pixel.hashValue
+    }
+}
+
+func ==<Comp: ImageComponentProtocol>(lhs: Comp, rhs: Comp) -> Bool {
+    return lhs.tag == rhs.tag && lhs.pixel == rhs.pixel
 }
 
 protocol ImagePixelProtocol {
@@ -64,7 +73,10 @@ extension ImagePixelProtocol {
     }
 }
 
-struct ImagePixel: ImagePixelProtocol{
+func ==<Pix: ImagePixelProtocol>(lhs:Pix, rhs: Pix) -> Bool {
+    return lhs.pixels == rhs.pixels
+}
+struct ImagePixel: ImagePixelProtocol, Hashable, Equatable{
     let pixels: [ImageComponentTag:ImageComponent]
     init(ptr: UnsafePointer<UInt8>, length: Int, alphaInfo: CGImageAlphaInfo) {
         var pixels = [ImageComponentTag:ImageComponent]()
@@ -96,6 +108,12 @@ struct ImagePixel: ImagePixelProtocol{
         }
         self.pixels = pixels
     }
+    
+    var hashValue: Int {
+        return pixels.reduce(0, combine: { (hash, other) -> Int in
+            return hash ^ other.key.hashValue ^ other.value.hashValue
+        })
+    }
 }
 
 protocol ImageArrayProtocol {
@@ -116,11 +134,14 @@ protocol ImageDataSourceable {
     var bytes: UnsafePointer<UInt8> { get }
     var row: Int { get }
     var col: Int { get }
+    
+}
+
+protocol ImageDataPixelable {
     func pixel(row: Int, col: Int) -> ImagePixel
 }
 
-
-extension ImageDataSourceable where Self: CGImage {
+extension ImageDataSourceable where Self: CGImage, Self: ImageDataPixelable {
     var numberofStreamLength: Int {
         return self.width * self.height
     }
@@ -160,10 +181,55 @@ extension ImageDataSourceable where Self: CGImage {
     }
 }
 
-extension CGImage : ImageDataSourceable {}
+extension CGImage : ImageDataSourceable, ImageDataPixelable {}
 
-struct MatrixDataSource {
-    var imageDataSource: ImageDataSourceable
+protocol KernelProtocol {
+    var matrix: [Float] { get }
+    var col: Int { get }
+    var row: Int { get }
+    
+    func apply(pixel: ImagePixel, source: CGImage, row: Int, col: Int) -> ImagePixel
+}
+
+extension KernelProtocol {
+    var row: Int {
+        return matrix.count / col
+    }
+}
+
+struct Kernel: KernelProtocol {
+    let matrix: [Float]
+    let col: Int
+    var cache: [ImagePixel: ImagePixel] = [:]
+    func apply(pixel: ImagePixel, source: CGImage, row: Int, col: Int) -> ImagePixel {
+        if let pixel = cache[pixel] {
+            return pixel
+        }
+        let kernelRows = self.row
+        let kernelCols = self.col
+        
+        let la_matrix = la_matrix_from_float_buffer(matrix, la_count_t(kernelRows), la_count_t(kernelCols), la_count_t(kernelCols), la_hint_t(LA_NO_HINT), la_attribute_t(LA_DEFAULT_ATTRIBUTES))
+        
+        let rowHalf = kernelRows / 2
+        let colHalf = kernelCols / 2
+        
+        return pixel
+    }
+}
+
+struct MatrixDataSource : ImageDataPixelable {
+    var imageDataSource: CGImage
+    var kernel: Kernel
+    
+    func pixel(row: Int, col: Int) -> ImagePixel {
+        return self.imageDataSource.pixel(row: row, col: col)
+    }
+    
+    func pixel(indexPath: IndexPath) -> ImagePixel {
+        let col = indexPath.row % self.imageDataSource.col
+        let row = indexPath.row / self.imageDataSource.col + (0 < indexPath.row % self.imageDataSource.col ? 1 : 0)
+        return pixel(row: row, col: col)
+    }
 }
 
 typealias ImageMatrixCellForItemHandle = (collectionView: UICollectionView, indexPath: IndexPath, pixel: ImagePixel) -> UICollectionViewCell
