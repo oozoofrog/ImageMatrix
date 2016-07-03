@@ -27,4 +27,17 @@ class ViewController: UICollectionViewController {
         self.collectionView?.reloadData()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        self.customNavigationController?.setupGesture(view: self.view, handle: { (navigationController, operation) in
+            switch operation {
+            case .push:
+                navigationController.pushViewController((self.storyboard?.instantiateViewController(withIdentifier: ConvolveInputController.Identifier))!, animated: true)
+            default:
+                break
+            }
+        })
+    }
+    
 }

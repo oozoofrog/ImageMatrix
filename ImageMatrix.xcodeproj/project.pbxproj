@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		AC18E5061D1E349900979D61 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AC18E5081D1E349900979D61 /* Localizable.strings */; };
 		AC369BF61D201545001530DB /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC369BF51D201545001530DB /* ViewController.swift */; };
+		AC8692BB1D29561A00955284 /* NavigationAnimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8692BA1D29561A00955284 /* NavigationAnimator.swift */; };
+		AC8692BD1D29564300955284 /* ConvolveInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8692BC1D29564300955284 /* ConvolveInputController.swift */; };
+		AC8692BF1D29568500955284 /* Protocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8692BE1D29568500955284 /* Protocols.swift */; };
 		AC9B6B711D200C5E00A2ECD9 /* MatrixCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9B6B701D200C5E00A2ECD9 /* MatrixCell.swift */; };
 		ACA4B7B11D1FCE7C008337C7 /* MatrixLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA4B7B01D1FCE7C008337C7 /* MatrixLayout.swift */; };
 		ACDB0EDC1D1F986600B82BC6 /* MatrixDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACDB0EDB1D1F986600B82BC6 /* MatrixDataSource.swift */; };
@@ -44,6 +47,9 @@
 		AC18E5071D1E349900979D61 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AC18E5091D1E34B500979D61 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AC369BF51D201545001530DB /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		AC8692BA1D29561A00955284 /* NavigationAnimator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NavigationAnimator.swift; sourceTree = "<group>"; };
+		AC8692BC1D29564300955284 /* ConvolveInputController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConvolveInputController.swift; sourceTree = "<group>"; };
+		AC8692BE1D29568500955284 /* Protocols.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Protocols.swift; sourceTree = "<group>"; };
 		AC9B6B701D200C5E00A2ECD9 /* MatrixCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MatrixCell.swift; sourceTree = "<group>"; };
 		ACA4B7B01D1FCE7C008337C7 /* MatrixLayout.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MatrixLayout.swift; sourceTree = "<group>"; };
 		ACDB0EDB1D1F986600B82BC6 /* MatrixDataSource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MatrixDataSource.swift; sourceTree = "<group>"; };
@@ -130,6 +136,9 @@
 				ACDB0EDA1D1F984D00B82BC6 /* Matrix */,
 				ACE9427A1D1D5556006FAFD8 /* AppDelegate.swift */,
 				AC369BF51D201545001530DB /* ViewController.swift */,
+				AC8692BC1D29564300955284 /* ConvolveInputController.swift */,
+				AC8692BA1D29561A00955284 /* NavigationAnimator.swift */,
+				AC8692BE1D29568500955284 /* Protocols.swift */,
 				ACE9427E1D1D5556006FAFD8 /* Main.storyboard */,
 				AC18E5081D1E349900979D61 /* Localizable.strings */,
 				ACE942811D1D5556006FAFD8 /* Assets.xcassets */,
@@ -238,12 +247,14 @@
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = HY47J4787Q;
 						DevelopmentTeamName = "Kwanghoon Choi";
+						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 					};
 					ACE9428A1D1D5556006FAFD8 = {
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = HY47J4787Q;
 						DevelopmentTeamName = "Kwanghoon Choi";
+						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 						TestTargetID = ACE942761D1D5556006FAFD8;
 					};
@@ -251,6 +262,7 @@
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = HY47J4787Q;
 						DevelopmentTeamName = "Kwanghoon Choi";
+						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 						TestTargetID = ACE942761D1D5556006FAFD8;
 					};
@@ -312,9 +324,12 @@
 			files = (
 				AC369BF61D201545001530DB /* ViewController.swift in Sources */,
 				ACA4B7B11D1FCE7C008337C7 /* MatrixLayout.swift in Sources */,
+				AC8692BB1D29561A00955284 /* NavigationAnimator.swift in Sources */,
 				AC9B6B711D200C5E00A2ECD9 /* MatrixCell.swift in Sources */,
 				ACDB0EDC1D1F986600B82BC6 /* MatrixDataSource.swift in Sources */,
 				ACE9427B1D1D5556006FAFD8 /* AppDelegate.swift in Sources */,
+				AC8692BD1D29564300955284 /* ConvolveInputController.swift in Sources */,
+				AC8692BF1D29568500955284 /* Protocols.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

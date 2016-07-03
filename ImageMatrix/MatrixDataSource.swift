@@ -10,17 +10,17 @@ import UIKit
 import Accelerate
 
 enum ImageComponentTag: Hashable, CustomStringConvertible, Equatable {
-    case R, G, B, A
+    case r, g, b, a
     
     var description: String {
         switch self {
-        case .A:
+        case .a:
             return "A"
-        case .B:
+        case .b:
             return "B"
-        case .G:
+        case .g:
             return "G"
-        case .R:
+        case .r:
             return "R"
         }
     }
@@ -59,7 +59,7 @@ extension ImagePixelProtocol {
         if 1 == pixels.count {
             return true
         }
-        let first = pixels[.R]?.pixel
+        let first = pixels[.r]?.pixel
         for pixel in pixels {
             if first != pixel.value.pixel {
                 return false
@@ -69,7 +69,7 @@ extension ImagePixelProtocol {
     }
     
     var color: UIColor {
-        return UIColor(red: CGFloat(pixels[.R]?.pixel ?? 0) / 255.0, green: CGFloat(pixels[.G]?.pixel ?? 0) / 255.0, blue: CGFloat(pixels[.B]?.pixel ?? 0) / 255.0, alpha: CGFloat(pixels[.A]?.pixel ?? 0) / 255.0)
+        return UIColor(red: CGFloat(pixels[.r]?.pixel ?? 0) / 255.0, green: CGFloat(pixels[.g]?.pixel ?? 0) / 255.0, blue: CGFloat(pixels[.b]?.pixel ?? 0) / 255.0, alpha: CGFloat(pixels[.a]?.pixel ?? 0) / 255.0)
     }
 }
 
@@ -85,26 +85,26 @@ struct ImagePixel: ImagePixelProtocol, Hashable, Equatable{
         switch alphaInfo {
         case .first:
             start = 1
-            pixels[.A] = ImageComponent(tag: .A, pixel: ptr[0])
+            pixels[.a] = ImageComponent(tag: .a, pixel: ptr[0])
         case .last:
             start = 0
-            pixels[.A] = ImageComponent(tag: .A, pixel: ptr[length-1])
+            pixels[.a] = ImageComponent(tag: .a, pixel: ptr[length-1])
             end -= 1
         default:
             start = 0
         }
-        pixels[.R] = ImageComponent(tag: .R, pixel: ptr[start])
+        pixels[.r] = ImageComponent(tag: .r, pixel: ptr[start])
         if start + 1 < end {
-            pixels[.G] = ImageComponent(tag: .G, pixel: ptr[start + 1])
+            pixels[.g] = ImageComponent(tag: .g, pixel: ptr[start + 1])
         }
         else {
-            pixels[.G] = pixels[.R]
+            pixels[.g] = pixels[.r]
         }
         if start + 2 < end {
-            pixels[.B] = ImageComponent(tag: .B, pixel: ptr[start + 2])
+            pixels[.b] = ImageComponent(tag: .b, pixel: ptr[start + 2])
         }
         else {
-            pixels[.B] = pixels[.R]
+            pixels[.b] = pixels[.r]
         }
         self.pixels = pixels
     }
@@ -138,7 +138,7 @@ protocol ImageDataSourceable {
 }
 
 protocol ImageDataPixelable {
-    func pixel(row: Int, col: Int) -> ImagePixel
+    func pixel(_ row: Int, col: Int) -> ImagePixel
 }
 
 extension ImageDataSourceable where Self: CGImage, Self: ImageDataPixelable {
@@ -168,16 +168,16 @@ extension ImageDataSourceable where Self: CGImage, Self: ImageDataPixelable {
         return self.width
     }
     
-    func pixel(row: Int, col: Int) -> ImagePixel {
+    func pixel(_ row: Int, col: Int) -> ImagePixel {
         let streamIndex = bytesPerRow * row + col * numberofComponents
         let indexedPtr = bytes.advanced(by: streamIndex)
     
         return ImagePixel(ptr: indexedPtr, length: numberofComponents, alphaInfo: alphaInfo)
     }
-    func pixel(indexPath: IndexPath) -> ImagePixel {
+    func pixel(_ indexPath: IndexPath) -> ImagePixel {
         let col = indexPath.row % self.width
         let row = indexPath.row / self.width + (0 < indexPath.row % self.width ? 1 : 0)
-        return pixel(row: row, col: col)
+        return pixel(row, col: col)
     }
 }
 
@@ -188,7 +188,7 @@ protocol KernelProtocol {
     var col: Int { get }
     var row: Int { get }
     
-    func apply(pixel: ImagePixel, source: CGImage, row: Int, col: Int) -> ImagePixel
+    func apply(_ pixel: ImagePixel, source: CGImage, row: Int, col: Int) -> ImagePixel
 }
 
 extension KernelProtocol {
@@ -201,7 +201,7 @@ struct Kernel: KernelProtocol {
     let matrix: [Float]
     let col: Int
     var cache: [ImagePixel: ImagePixel] = [:]
-    func apply(pixel: ImagePixel, source: CGImage, row: Int, col: Int) -> ImagePixel {
+    func apply(_ pixel: ImagePixel, source: CGImage, row: Int, col: Int) -> ImagePixel {
         if let pixel = cache[pixel] {
             return pixel
         }
@@ -221,14 +221,14 @@ struct MatrixDataSource : ImageDataPixelable {
     var imageDataSource: CGImage
     var kernel: Kernel
     
-    func pixel(row: Int, col: Int) -> ImagePixel {
-        return self.imageDataSource.pixel(row: row, col: col)
+    func pixel(_ row: Int, col: Int) -> ImagePixel {
+        return self.imageDataSource.pixel(row, col: col)
     }
     
-    func pixel(indexPath: IndexPath) -> ImagePixel {
+    func pixel(_ indexPath: IndexPath) -> ImagePixel {
         let col = indexPath.row % self.imageDataSource.col
         let row = indexPath.row / self.imageDataSource.col + (0 < indexPath.row % self.imageDataSource.col ? 1 : 0)
-        return pixel(row: row, col: col)
+        return pixel(row, col: col)
     }
 }
 
@@ -254,7 +254,7 @@ class ImageMatrixDataSource: NSObject, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         var pixel = self.pixels[indexPath]
         if nil == pixel {
-            pixel = cgImage.pixel(indexPath: indexPath)
+            pixel = cgImage.pixel(indexPath)
             self.pixels[indexPath] = pixel
         }
         return cellHandle(collectionView: collectionView, indexPath: indexPath, pixel: pixel!)

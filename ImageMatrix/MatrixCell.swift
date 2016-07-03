@@ -19,7 +19,7 @@ class MatrixCell: UICollectionViewCell {
                 return
             }
             self.backgroundColor = pixel.color
-            self.label.text = "\(pixel.pixels[.R]!)\n\(pixel.pixels[.G]!)\n\(pixel.pixels[.B]!)\n\(pixel.pixels[.A]!)"
+            self.label.text = "\(pixel.pixels[.r]!)\n\(pixel.pixels[.g]!)\n\(pixel.pixels[.b]!)\n\(pixel.pixels[.a]!)"
         }
     }
     
